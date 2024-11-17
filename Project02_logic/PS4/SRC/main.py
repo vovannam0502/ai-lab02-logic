@@ -12,15 +12,9 @@ def main():
     for filename in inputfiles:
         input_file = os.path.join(input_path, filename)
         output_file = os.path.join(output_path, filename.replace('input', 'output'))
-
-        # Đọc dữ liệu từ file input
-        alpha, KB = read_file(input_file)
-
-        # PL-Resolution
-        result, check = PL_resolution(KB, alpha)
-
-        # Ghi kết quả ra file output
-        write_file(result, check, output_file)
+        alpha, KB = read_file(input_file) # Đọc dữ liệu từ file input
+        result, check = PL_resolution(KB, alpha) # PL-Resolution
+        write_file(result, check, output_file) # Ghi kết quả ra file output
 
 if __name__ == '__main__':
     main()
