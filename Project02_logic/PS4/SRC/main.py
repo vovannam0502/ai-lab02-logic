@@ -1,29 +1,25 @@
 import os
-import kb
+from functions import *
 
-INPUT_DIR = '../IntroAI-Lab02-Logic/Project02_logic/PS4/SRC/input/'
-OUTPUT_DIR = '../IntroAI-Lab02-Logic/Project02_logic/PS4/SRC/output/'
-
-def readKB(filename):
-    content = []
+def readInput(filename):
+    data = []
     with open(filename, 'r') as f:
-        content = f.read().splitlines()
+        data = f.read().splitlines()
 
-    alpha_size = int(content[0])
-    query_string = content[1:alpha_size + 1]
+    alpha = [data[0]]
     query = []
-    for cnf in query_string:
+    for cnf in alpha:
         clause = cnf.split()
         clause = list(filter(lambda x: x != 'OR', clause))
         query.append(clause)
 
-    KB = kb.KnowledgeBase()
-    KB_size = int(content[alpha_size + 1])
-    KB_string = content[alpha_size + 2:]
+    KB = initKnowledgeBase()
+    KB_size = int(data[1])
+    KB_string = data[2:]
     for cnf in KB_string:
         clause = cnf.split()
         clause = list(filter(lambda x: x != 'OR', clause))
-        KB.addClause(clause)
+        addClause(KB, clause)
 
     return KB, query
 
@@ -44,8 +40,15 @@ def writeOutput(result, check, filename):
         else:
             f.write('NO')
 
+INPUT_DIR = '../IntroAI-Lab02-Logic/Project02_logic/PS4/SRC/input/'
+OUTPUT_DIR = '../IntroAI-Lab02-Logic/Project02_logic/PS4/SRC/output/'
+
 inputs = os.listdir(INPUT_DIR)
 for filename in inputs:
-    KB, query = readKB(INPUT_DIR + filename)
-    result, check = KB.PL_Resolution(query)
-    writeOutput(result, check, OUTPUT_DIR + 'output' + filename[6:])
+    input_filename = INPUT_DIR + filename
+    KB, query = readInput(input_filename)
+
+    result, check = PLResolution(KB, query)
+    
+    output_filename = OUTPUT_DIR + 'output' + filename[6:]
+    writeOutput(result, check, output_filename)
