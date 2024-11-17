@@ -1,54 +1,26 @@
 import os
 from functions import *
 
-def readInput(filename):
-    data = []
-    with open(filename, 'r') as f:
-        data = f.read().splitlines()
+def main():
+    io_path = '../IntroAI-Lab02-Logic/Project02_logic/PS4/SRC/'
+    input_path = os.path.join(io_path, 'input/')
+    output_path = os.path.join(io_path, 'output/')
 
-    alpha = [data[0]]
-    query = []
-    for cnf in alpha:
-        clause = cnf.split()
-        clause = list(filter(lambda x: x != 'OR', clause))
-        query.append(clause)
+    os.makedirs(output_path, exist_ok=True)
+    inputfiles = os.listdir(input_path)
 
-    KB = initKnowledgeBase()
-    KB_size = int(data[1])
-    KB_string = data[2:]
-    for cnf in KB_string:
-        clause = cnf.split()
-        clause = list(filter(lambda x: x != 'OR', clause))
-        addClause(KB, clause)
+    for filename in inputfiles:
+        input_file = os.path.join(input_path, filename)
+        output_file = os.path.join(output_path, filename.replace('input', 'output'))
 
-    return KB, query
+        # Đọc dữ liệu từ file input
+        alpha, KB = read_file(input_file)
 
+        # PL-Resolution
+        result, check = PL_resolution(KB, alpha)
 
-def writeOutput(result, check, filename):
-    with open(filename, 'w') as f:
-        for loop_res in result:
-            f.write(str(len(loop_res)) + '\n')
-            for clause in loop_res:
-                string = ''
-                for c in clause:
-                    string += c
-                    if c != clause[-1]:
-                        string += ' OR '
-                f.write(string + '\n')
-        if check:
-            f.write('YES')
-        else:
-            f.write('NO')
+        # Ghi kết quả ra file output
+        write_file(result, check, output_file)
 
-INPUT_DIR = '../IntroAI-Lab02-Logic/Project02_logic/PS4/SRC/input/'
-OUTPUT_DIR = '../IntroAI-Lab02-Logic/Project02_logic/PS4/SRC/output/'
-
-inputs = os.listdir(INPUT_DIR)
-for filename in inputs:
-    input_filename = INPUT_DIR + filename
-    KB, query = readInput(input_filename)
-
-    result, check = PLResolution(KB, query)
-    
-    output_filename = OUTPUT_DIR + 'output' + filename[6:]
-    writeOutput(result, check, output_filename)
+if __name__ == '__main__':
+    main()

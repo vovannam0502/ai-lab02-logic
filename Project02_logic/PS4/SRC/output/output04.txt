@@ -2,7 +2,7 @@
 P OR R
 P OR S
 Q OR U
--Q OR U
+U OR -Q
 -P
 -R
 9

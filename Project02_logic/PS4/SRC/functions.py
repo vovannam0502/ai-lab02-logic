@@ -1,124 +1,172 @@
-import itertools
+# Hàm đọc các dòng từ file input, trả về list các literal
+def split_and_filter(line):
+    return [literal for literal in line.split() if literal != 'OR']
 
-def initKnowledgeBase():
-    return []
+# Hàm đọc dữ liệu từ file input, trả về alpha và KB
+def read_file(filename):
+    with open(filename, 'r') as f:
+        data = [line.strip() for line in f]
 
-def addClause(KB, clause):
-    if clause not in KB and not checkComplementary(clause):
+    alpha = split_and_filter(data[0]) # Dòng đầu tiên
+
+    size = int(data[1]) # Số mệnh đề trong KB
+    KB = [split_and_filter(data[2 + i]) for i in range(size)]
+
+    return alpha, KB
+
+# Hàm ghi kết quả ra file output
+def write_file(result, check, filename):
+    with open(filename, 'w') as f:
+        for i in result:
+            f.write(str(len(i)) + '\n') # Số mệnh đề trong mỗi vòng lặp  
+
+            # Ghi từng mệnh đề trong mỗi vòng lặp
+            for clause in i:
+                clause_str = ' OR '.join(clause)
+                f.write(clause_str + '\n')
+
+        f.write('YES' if check else 'NO') # Ghi kết quả cuối cùng
+
+# Hàm thêm mệnh đề vào KB
+def add_clause(KB, clause):
+    if clause not in KB:
         KB.append(clause)
 
-def getNegativeAtom(atom):
-    return atom[1:] if atom[0] == '-' else '-' + atom
+# Hàm phủ định một literal
+def negate_literal(literal):
+    return literal[1:] if literal.startswith('-') else '-' + literal
 
-def getNegativeQuery(query): # Không dùng thư viện itertools.chain
-    res = []
-    for clause in query:
-        new = []
-        for atom in clause:
-            new.append([getNegativeAtom(atom)])
-        res.append(new)
+# Hàm phủ định một clause
+def negate_clause(clause):
+    negate_claused = [[negate_literal(literal)] for literal in clause]
+    return standard_CNF(negate_claused)
 
-    if len(res) == 1:
-        return list(itertools.chain.from_iterable(res))
-    else:
-        return convertToCNF(res)
-    
-def checkTrue(clause, list_clauses):
-    for c in list_clauses:
-        if set(c).issubset(set(clause)):
-            return True
-    return False
+# Hàm loại bỏ mệnh đề có dạng (A or B or -B) hay không
+def remove_complementary(clauses):
+    result = []
+    for clause in clauses:
+        # Kiểm tra xem clause có chứa literal và phủ định của nó không
+        if not any(negate_literal(literal) in clause for literal in clause):
+            result.append(clause)
+    return result
 
-def checkComplementary(clause):
-    for atom in clause:
-        if getNegativeAtom(atom) in clause:
-            return True
-    return False
+# Hàm loại bỏ các mệnh đề trùng lặp, các mệnh đề (A or True)
+def remove_redundant_clauses(clauses):
+    result = []
+    for clause in clauses:
+        is_redundant = False
+        for existing_clause in result:
+            # Kiểm tra clause có phải là con của existing_clause
+            if all(literal in existing_clause for literal in clause):
+                is_redundant = True
+                break
+        if not is_redundant:
+            result.append(clause)
+    return result
 
-def removeEval(clauses):
-    res = []
-    for c in clauses:
-        if not checkTrue(c, res):
-            res.append(c)
-    return res
-
-def convertToCNF(clauses):
-    res = []
-    product_all = list(itertools.product(*clauses))
+# Hàm chuẩn hóa mệnh đề thành dạng chuẩn CNF
+def standard_CNF(clauses):
+    std_cnf = []
+    product_all = list(product_helper(clauses))
     for i in product_all:
-        new = normClause(list(itertools.chain.from_iterable(list(i))))
-        if not checkComplementary(new) and new not in res:
-            res.append(new)
-    res.sort(key=len)
-    res = removeEval(res)
-    return res
+        std_clause = standard_clause(i)
+        if std_clause not in std_cnf:
+            std_cnf.append(std_clause)
+            
+    std_cnf.sort(key=len)
+    std_cnf = remove_redundant_clauses(std_cnf)
+    std_cnf = remove_complementary(std_cnf)
+    return std_cnf
 
-def normClause(clause):
-    # Remove duplicates
-    clause = list(dict.fromkeys(clause))
+# Hàm chuẩn hóa mệnh đề, loại bỏ các literal trùng lặp, sắp xếp theo thứ tự bảng chữ cái
+def standard_clause(clause):
+    # Loại bỏ các literal trùng lặp
+    clause = list(set(clause))
 
-    # Sort by alphabet
-    tuple_form = []
-    for atom in clause:
-        if atom[0] == '-':
-            tuple_form.append((atom[1], -1))
+    # Danh sách literal khẳng định và phủ định
+    positive_literals = []
+    negative_literals = []
+
+    for literal in clause:
+        if literal.startswith('-'):
+            negative_literals.append(literal[1:])
         else:
-            tuple_form.append((atom[0], 1))
-    tuple_form.sort()
+            positive_literals.append(literal)
 
-    # Rebuild clause
-    res = []
-    for tup in tuple_form:
-        if tup[1] == -1:
-            res.append('-' + tup[0])
-        else:
-            res.append(tup[0])
-    return res
+    # Sắp xếp các literal theo bảng chữ cái
+    positive_literals.sort()
+    negative_literals.sort()
 
-def resolve(KB, clause_i, clause_j):
-    new_clause = []
-    for atom in clause_i:
-        neg_atom = getNegativeAtom(atom)
-        if neg_atom in clause_j:
-            temp_c_i = clause_i.copy()
-            temp_c_j = clause_j.copy()
-            temp_c_i.remove(atom)
-            temp_c_j.remove(neg_atom)
-            if not temp_c_i and not temp_c_j:
-                new_clause.append(['{}'])
-            else:
-                clause = temp_c_i + temp_c_j
-                clause = normClause(clause)
-                if not checkComplementary(clause) and clause not in KB:
-                    new_clause.append(clause)
-    return new_clause
+    sorted_clause = positive_literals + ['-' + literal for literal in negative_literals]
 
-def PLResolution(KB, query):
-    tempKB = KB.copy()
+    return sorted_clause
 
-    neg_query = getNegativeQuery(query)
-    print(neg_query)
-    for neg_atom in neg_query:
-        addClause(tempKB, neg_atom)
+# Hàm resolve hai mệnh đề
+def resolve(clause1, clause2):
+    resolvents = []
+    for literal in clause1:
+        neg_literal = negate_literal(literal)
+        if neg_literal in clause2:
+            # Loại bỏ literal và neg_literal, hợp nhất hai mệnh đề còn lại
+            new_clause = [x for x in clause1 if x != literal] + [y for y in clause2 if y != neg_literal]
+            # Chuẩn hóa và loại bỏ mệnh đề bổ sung nếu có
+            new_clause = standard_clause(new_clause)
+            if new_clause not in resolvents:
+                resolvents.append(new_clause)
+                
+    resolvents = remove_redundant_clauses(resolvents)
+    resolvents = remove_complementary(resolvents)
+    return resolvents
+
+# Thuật toán PL-Resolution
+def PL_resolution(KB, alpha):
+    clauses = KB[:]
+
+    # Thêm mệnh đề phủ định của alpha vào KB
+    negated_alpha = negate_clause(alpha)
+    for literal in negated_alpha:
+        add_clause(clauses, literal)
 
     result = []
     while True:
-        clause_pairs = list(itertools.combinations(range(len(tempKB)), 2))
-        
-        resolvents = []
+        # Lấy ra tất cả các cặp mệnh đề
+        clause_pairs = combinations_helper(len(clauses))
+        new_clauses = []
+
+        # Resolve từng cặp mệnh đề
         for pair in clause_pairs:
-            resolvent = resolve(tempKB, tempKB[pair[0]], tempKB[pair[1]])
-            if resolvent and resolvent not in resolvents:
-                resolvents.append(resolvent)
+            clause1 = clauses[pair[0]]
+            clause2 = clauses[pair[1]]
+            resolvents = resolve(clause1, clause2)
+            for resolvent in resolvents:
+                if resolvent == []:  # Phát hiện mệnh đề rỗng, trả về True
+                    new_clauses.append(['{}'])
+                    result.append(new_clauses)
+                    return result, True
+                if resolvent not in new_clauses and resolvent not in clauses:
+                    new_clauses.append(resolvent)
 
-        resolvents = list(itertools.chain.from_iterable(resolvents))
-        result.append(resolvents)
+        # Các mệnh đề mới được tạo ra trong vòng lặp này
+        result.append(new_clauses)
 
-        if not resolvents:
+        if not new_clauses:  # Nếu không tạo ra thêm mệnh đề, trả về False
             return result, False
-        else:
-            if ['{}'] in resolvents:
-                return result, True
-            else:
-                for res in resolvents:
-                    addClause(tempKB, res)
+
+        # Thêm các mệnh đề mới vào KB để tiếp tục hợp giải
+        for clause in new_clauses:
+            add_clause(clauses, clause)
+
+# Hàm tạo tất cả các kết hợp của các mệnh đề
+def product_helper(clauses):
+    result = [[]]
+    for clause in clauses:
+        result = [x + [y] for x in result for y in clause]
+    return result
+
+# Hàm tạo tất cả các kết hợp của các cặp chỉ số
+def combinations_helper(n):
+    result = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            result.append([i, j])
+    return result
