@@ -1,0 +1,10 @@
+5
+K
+L
+-L OR M
+K OR M
+-L
+2
+M
+{}
+YES
