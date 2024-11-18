@@ -1,8 +1,10 @@
-# Hàm đọc các dòng từ file input, trả về list các literal
+# Hàm đọc các dòng từ file input
+# Hàm trả về list các literal trong mệnh đề
 def split_and_filter(line):
     return [literal for literal in line.split() if literal != 'OR']
 
-# Hàm đọc dữ liệu từ file input, trả về alpha và KB
+# Hàm đọc dữ liệu từ file input
+# Hàm trả về alpha và KB
 def read_file(filename):
     with open(filename, 'r') as f:
         data = [line.strip() for line in f]
@@ -15,28 +17,29 @@ def read_file(filename):
     return alpha, KB
 
 # Hàm ghi kết quả ra file output
-def write_file(result, check, filename):
+# Hàm ghi số lượng mệnh đề trong mỗi vòng lặp, các mệnh đề trong vòng lặp tương ứng và kết quả hợp giải
+def write_file(result, isTrue, filename):
     with open(filename, 'w') as f:
         for i in result:
-            f.write(str(len(i)) + '\n') # Số mệnh đề trong mỗi vòng lặp  
+            f.write(str(len(i)) + '\n') # Ghi số lượng mệnh đề trong mỗi vòng lặp  
 
             # Ghi từng mệnh đề trong mỗi vòng lặp
             for clause in i:
                 clause_str = ' OR '.join(clause)
                 f.write(clause_str + '\n')
 
-        f.write('YES' if check else 'NO') # Ghi kết quả cuối cùng
+        f.write('YES' if isTrue else 'NO') # Ghi kết quả hợp giải
 
 # Hàm thêm mệnh đề vào KB
 def add_clause(KB, clause):
     if clause not in KB:
         KB.append(clause)
 
-# Hàm phủ định một literal
+# Hàm phủ định một literal, trả về literal phủ định
 def negate_literal(literal):
     return literal[1:] if literal.startswith('-') else '-' + literal
 
-# Hàm phủ định một clause
+# Hàm phủ định một clause, trả về phủ định của clause ở dạng CNF
 def negate_clause(clause):
     negate_claused = [[negate_literal(literal)] for literal in clause]
     return standard_CNF(negate_claused)
@@ -64,7 +67,15 @@ def remove_redundant_clauses(clauses):
             result.append(clause)
     return result
 
-# Hàm chuẩn hóa mệnh đề thành dạng chuẩn CNF
+# Hàm loại bỏ các literal trùng lặp, sắp xếp theo thứ tự bảng chữ cái
+def standard_clause(clause):
+    # Loại bỏ các literal trùng lặp
+    clause = list(set(clause))
+
+    sorted_clause = sorted(clause, key=lambda x: (x.lstrip('-'), x.startswith('-')))
+    return sorted_clause
+
+# Hàm chuẩn hóa mệnh đề thành dạng CNF
 def standard_CNF(clauses):
     std_cnf = []
     product_all = list(product_helper(clauses))
@@ -78,29 +89,6 @@ def standard_CNF(clauses):
     std_cnf = remove_complementary(std_cnf)
     return std_cnf
 
-# Hàm chuẩn hóa mệnh đề, loại bỏ các literal trùng lặp, sắp xếp theo thứ tự bảng chữ cái
-def standard_clause(clause):
-    # Loại bỏ các literal trùng lặp
-    clause = list(set(clause))
-
-    # Danh sách literal khẳng định và phủ định
-    positive_literals = []
-    negative_literals = []
-
-    for literal in clause:
-        if literal.startswith('-'):
-            negative_literals.append(literal[1:])
-        else:
-            positive_literals.append(literal)
-
-    # Sắp xếp các literal theo bảng chữ cái
-    positive_literals.sort()
-    negative_literals.sort()
-
-    sorted_clause = positive_literals + ['-' + literal for literal in negative_literals]
-
-    return sorted_clause
-
 # Hàm resolve hai mệnh đề
 def resolve(clause1, clause2):
     resolvents = []
@@ -109,7 +97,7 @@ def resolve(clause1, clause2):
         if neg_literal in clause2:
             # Loại bỏ literal và neg_literal, hợp nhất hai mệnh đề còn lại
             new_clause = [x for x in clause1 if x != literal] + [y for y in clause2 if y != neg_literal]
-            # Chuẩn hóa và loại bỏ mệnh đề bổ sung nếu có
+            # Chuẩn hóa và loại bỏ mệnh đề bổ sung
             new_clause = standard_clause(new_clause)
             if new_clause not in resolvents:
                 resolvents.append(new_clause)
@@ -143,16 +131,17 @@ def PL_resolution(KB, alpha):
                     new_clauses.append(['{}'])
                     result.append(new_clauses)
                     return result, True
+                # Nếu mệnh đề mới không trùng với các mệnh đề đã có
                 if resolvent not in new_clauses and resolvent not in clauses:
                     new_clauses.append(resolvent)
 
-        # Các mệnh đề mới được tạo ra trong vòng lặp này
+        # Các mệnh đề mới trong vòng lặp này
         result.append(new_clauses)
 
         if not new_clauses:  # Nếu không tạo ra thêm mệnh đề, trả về False
             return result, False
 
-        # Thêm các mệnh đề mới vào KB để tiếp tục hợp giải
+        # Thêm các mệnh đề mới vào KB, tiếp tục hợp giải
         for clause in new_clauses:
             add_clause(clauses, clause)
 

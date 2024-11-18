@@ -1,11 +1,10 @@
 2
 -C
-C OR -B
+-B OR C
 2
-C OR -A
+-A OR C
 A OR -B
-2
-B OR -A
+1
 A OR -C
 0
 NO

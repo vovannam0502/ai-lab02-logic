@@ -1,0 +1,5 @@
+T
+3
+T OR X
+-Y OR T
+-X OR Y

@@ -1,13 +1,9 @@
-7
-B OR D OR -A
-C OR D
-B OR D OR -C
+3
 -A OR -C
-D OR -A
-D OR -A OR -C
-D OR -B
+-B
+-B OR C
 2
-D
-D OR -C
+A OR C
+-C
 0
 NO

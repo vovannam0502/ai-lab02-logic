@@ -3,7 +3,7 @@
 B
 -C
 4
-C OR -B
+-B OR C
 A OR C
 A OR -B
 {}
