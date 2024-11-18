@@ -2,10 +2,10 @@ import os
 from functions import *
 
 def main():
-    path = '../IntroAI-Lab02-Logic/Project02_logic/PS4/SRC/'
-    input_path = os.path.join(path, 'input/')
-    output_path = os.path.join(path, 'output/')
-
+    src_dir = os.path.dirname(os.path.abspath(__file__))
+    input_path = os.path.join(src_dir, 'input')
+    output_path = os.path.join(src_dir, 'output')
+    
     os.makedirs(output_path, exist_ok=True)
     inputfiles = os.listdir(input_path)
 
