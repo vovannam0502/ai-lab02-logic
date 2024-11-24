@@ -1,10 +1,15 @@
+4
+B OR -D
+C OR -D OR E
+-A OR C
+B OR -E
 5
-A
-B
-C
-A OR B OR C OR -D
-E
+C OR -D
+C OR -E
+A OR C OR -D
+-A OR B OR C
+B OR C OR -D
 1
-A OR B OR C
+B OR C OR -E
 0
 NO

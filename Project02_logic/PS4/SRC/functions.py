@@ -30,16 +30,11 @@ def write_file(result, isTrue, filename):
 
         f.write('YES' if isTrue else 'NO') # Ghi kết quả hợp giải
 
-# Hàm thêm mệnh đề vào KB
-def add_clause(KB, clause):
-    if clause not in KB:
-        KB.append(clause)
-
 # Hàm phủ định một literal, trả về literal phủ định
 def negate_literal(literal):
     return literal[1:] if literal.startswith('-') else '-' + literal
 
-# Hàm phủ định một clause, trả về phủ định của clause ở dạng CNF
+# Hàm phủ định một mệnh đề, trả về phủ định của mệnh đề đó
 def negate_clause(clause):
     negate_claused = [[negate_literal(literal)] for literal in clause]
     return standard_CNF(negate_claused)
@@ -89,15 +84,14 @@ def standard_CNF(clauses):
     std_cnf = remove_complementary(std_cnf)
     return std_cnf
 
-# Hàm resolve hai mệnh đề
+# Hàm hợp giải hai mệnh đề
 def resolve(clause1, clause2):
     resolvents = []
     for literal in clause1:
         neg_literal = negate_literal(literal)
         if neg_literal in clause2:
-            # Loại bỏ literal và neg_literal, hợp nhất hai mệnh đề còn lại
+            # Hợp giải hai mệnh đề
             new_clause = [x for x in clause1 if x != literal] + [y for y in clause2 if y != neg_literal]
-            # Chuẩn hóa và loại bỏ mệnh đề bổ sung
             new_clause = standard_clause(new_clause)
             if new_clause not in resolvents:
                 resolvents.append(new_clause)
@@ -113,7 +107,8 @@ def PL_resolution(KB, alpha):
     # Thêm mệnh đề phủ định của alpha vào KB
     negated_alpha = negate_clause(alpha)
     for literal in negated_alpha:
-        add_clause(clauses, literal)
+        if literal not in clauses:
+            clauses.append(literal)
 
     result = []
     while True:
@@ -121,7 +116,7 @@ def PL_resolution(KB, alpha):
         clause_pairs = combinations_helper(len(clauses))
         new_clauses = []
 
-        # Resolve từng cặp mệnh đề
+        # Hợp giải từng cặp mệnh đề
         for pair in clause_pairs:
             clause1 = clauses[pair[0]]
             clause2 = clauses[pair[1]]
@@ -129,11 +124,13 @@ def PL_resolution(KB, alpha):
             for resolvent in resolvents:
                 if resolvent == []:  # Phát hiện mệnh đề rỗng, trả về True
                     new_clauses.append(['{}'])
+                    # print(f'{clause1} + {clause2} => {resolvent}')
                     result.append(new_clauses)
                     return result, True
                 # Nếu mệnh đề mới không trùng với các mệnh đề đã có
                 if resolvent not in new_clauses and resolvent not in clauses:
                     new_clauses.append(resolvent)
+                    # print(f'{clause1} + {clause2} => {resolvent}')
 
         # Các mệnh đề mới trong vòng lặp này
         result.append(new_clauses)
@@ -143,7 +140,8 @@ def PL_resolution(KB, alpha):
 
         # Thêm các mệnh đề mới vào KB, tiếp tục hợp giải
         for clause in new_clauses:
-            add_clause(clauses, clause)
+            if clause not in clauses:
+                clauses.append(clause)
 
 # Hàm tạo tất cả các kết hợp của các mệnh đề
 def product_helper(clauses):
